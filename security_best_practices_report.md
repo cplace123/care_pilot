@@ -35,3 +35,16 @@ Results are recorded in PROJECT_STATUS.md. All database tests use local PostgreS
 ## Approved demo deployment follow-up
 
 A live hosted test exposed backend error text in the Auth.js credentials redirect when the database TLS connection failed. The credentials callback now catches service exceptions and returns a generic rejection, with a regression test in tests/unit/auth-boundary.test.ts. Supabase's published CA is explicitly trusted without disabling certificate verification. See DEPLOYMENT.md for the certificate fingerprint and hosted validation results.
+
+## Stage 3 import security review
+
+Applied the installed skill's Next.js/React guidance to the new upload and preview surface. No known unresolved critical finding in the reviewed Stage 3 implementation. This remains a local synthetic exercise, not an independent penetration assessment.
+
+- `src/lib/server/import-files.ts`: raw uploads require exact Origin and measured byte limits; filenames are never paths. UTF-8 CSV and inspected single-sheet XLSX only. ZIP size/entry limits, sparse-coordinate bounds, rejection of formula/macro/link/entity content and exact numeric strings protect the parser. AES-GCM with tenant/file authenticated context protects stored originals.
+- `src/lib/server/imports.ts`: tenant-scoped queries, parameterised advisory locks, explicit mapping/version approval, configuration checksum, atomic source/error/cursor/audit commits, deterministic decimal validation and immutable source history. Missing references and conflicting identities are rejected. Reports omit imported values and neutralise spreadsheet prefixes.
+- `prisma/migrations/202611240001_import_hub/migration.sql`: additive schema, tenant composite keys, forced RLS, permission-aware mutation policies, initiating-actor restrictions and explicit least-privilege grants. New tables revoke public/API-role grants. Runtime cannot overwrite/delete original files or source snapshots.
+- `src/components/integration-hub.tsx`: React escapes previews, no raw HTML or localStorage of imported data, no external fetches. Preview/history/report responses are private and no-store.
+
+Testing caught Prisma's inability to deserialize a PostgreSQL void lock result and its default-field insert behaviour conflicting with intentionally narrow connection grants. Fixed by casting the lock result to text and inserting only approved directory columns. Workbook review also identified sparse coordinate allocation risk; preflight now bounds coordinates before parsing.
+
+Existing medium-priority production limitations remain. The bounded implementation has no antivirus scanner, unattended worker, retention management or edge request controls. Files stay encrypted in PostgreSQL; approved object storage, key rotation, ingress limits, load testing and independent review are required before real data or production operation. No external or hosted system was changed in Stage 3.

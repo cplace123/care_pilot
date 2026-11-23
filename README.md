@@ -1,12 +1,12 @@
 # CarePilot
 
-Stages 1–2 foundation for an Australian aged care and NDIS operations, compliance and financial assurance platform. CarePilot **works alongside** ShiftCare, AlayaCare, Lumary, Visualcare and accounting software. It does not replace them.
+Stages 1–3 foundation and manual Integration Hub for an Australian aged care and NDIS operations, compliance and financial assurance platform. CarePilot **works alongside** ShiftCare, AlayaCare, Lumary, Visualcare and accounting software. It does not replace them.
 
-The source of product requirements is [`CarePilot_PRD_v1.0.docx`](CarePilot_PRD_v1.0.docx), read in full before implementation. This foundation is deliberately smaller than the PRD's MVP: no importing, AI, reconciliation, compliance automation, communications or external write-back is implemented.
+The source of product requirements is [`CarePilot_PRD_v1.0.docx`](CarePilot_PRD_v1.0.docx), read in full before implementation. This foundation is deliberately smaller than the PRD's MVP: manual CSV/XLSX importing is implemented; AI, reconciliation, compliance automation, communications or external write-back remain deferred.
 
 ## Local setup
 
-Requirements: Node.js **24.11+ on the 24.x line**, npm, Docker with Compose, and an authenticator app for privileged demo accounts. PostgreSQL 17 runs locally on `127.0.0.1:55432`. Nothing is deployed.
+Requirements: Node.js **24.11+ on the 24.x line**, npm, Docker with Compose, and an authenticator app for privileged demo accounts. PostgreSQL 17 runs locally on `127.0.0.1:55432`. Stage 3 can also be published to the separately approved synthetic demo; see DEPLOYMENT.md.
 
 ```sh
 cd /workspace/care_pilot
@@ -55,11 +55,21 @@ All accounts are provisioned by local tooling in Stages 1–2. Self-service regi
 
 ## Stage 2 foundation APIs
 
-The existing Auth.js session protects all `/api/organisations/:organisationId` routes. GET reads organisation settings; PATCH updates only its name. `/integrations` lists safe connection metadata; PATCH `/integrations/:connectionId` updates only a display name. `/audit` and `/sources` return at most 50 recent events or source-record metadata. Raw imported payloads and credential references are not exposed. No import-processing endpoint exists.
+The existing Auth.js session protects all `/api/organisations/:organisationId` routes. GET reads organisation settings; PATCH updates only its name. `/integrations` lists safe connection metadata; PATCH `/integrations/:connectionId` updates only a display name. `/audit` and `/sources` return at most 50 recent events or source-record metadata. Raw imported payloads and credential references are not exposed. Stage 3 adds separately protected import endpoints described in [IMPORTS.md](IMPORTS.md).
 
 Owner and Administrator receive `organisation.configure`, `integrations.configure` and `sources.read`; other roles retain their previous permissions. Mutations require same-origin JSON and strict validated fields. Database triggers audit changes atomically. Integration credentials are not accepted by these APIs; only an opaque future secret-manager reference can be stored by trusted provisioning.
 
 For an existing Stage 1 local installation, run `npm run db:generate` and `npm run db:migrate`, then restart the server. Migrations preserve the existing membership table and data. No reseeding is necessary for the new permissions.
+
+## Try the Stage 3 Integration Hub locally
+
+For this existing workspace, run `npm run db:generate`, `npm run db:migrate`, and `npm run dev` (start the local database first if stopped). Do not reset or reseed the database. Sign in as an Owner with MFA, then open [http://localhost:3000/integrations](http://localhost:3000/integrations).
+
+Choose **Import Data**, source **CSV**, and Participants / clients. Upload `samples/imports/01-participants.csv`, review mappings, choose ISO dates, then **Validate and preview → Import valid records**. Continue with the numbered synthetic files using their matching record types and the same source. See [sample instructions](samples/imports/README.md). CSV and XLSX variants are included; importing both deliberately exercises duplicate record handling.
+
+Import history supports resume, row-level error downloads and duplicate-file reuse. Owners/Administrators can save reusable templates. Changed records require explicit approval to append immutable versions. Default limits are 2 MiB / 2,000 rows / 50 columns. Imports advance while the browser is open and resume safely from saved batches after interruptions. No external API connections or Stage 3 deployment were made.
+
+See [IMPORTS.md](IMPORTS.md) for all nine record types, mapping rules, supported formats, security controls, API contracts, retry/version policy and limitations. Upload synthetic data only.
 
 ## Validation
 
@@ -101,4 +111,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md), [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_
 
 ## Hosted synthetic demo
 
-The approved Sydney synthetic demo is live at [carepilot-demo-eta.vercel.app](https://carepilot-demo-eta.vercel.app). See [DEPLOYMENT.md](DEPLOYMENT.md) for the hosting configuration and current status. Local setup commands remain unchanged. Hosted runtime configuration uses a separate restricted Supabase pooler account and fresh secrets; do not upload your local `.env`.
+The approved Sydney synthetic demo is available at [carepilot-demo-eta.vercel.app](https://carepilot-demo-eta.vercel.app). See [DEPLOYMENT.md](DEPLOYMENT.md) for the hosting configuration and current status. Local setup commands remain unchanged. Hosted runtime configuration uses a separate restricted Supabase pooler account and fresh secrets; do not upload your local `.env`.

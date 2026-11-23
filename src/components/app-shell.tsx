@@ -19,7 +19,7 @@ export function AppShell({ organisation, userName, roles, permissions, section, 
     </aside>
     <div className="workspace"><header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <strong>{navigation.find(n => n.slug === section)?.label ?? 'Home'}</strong></div><div className="top-actions"><span className="environment-label"><span/>Foundation preview</span><ThemeToggle/></div></header>
       <div className="mobile-navigation"><Link href={base}><Brand/></Link><details key={section}><summary>Menu</summary>{nav}<Link className="nav-item" href="/app">Change organisation</Link><SignOut/></details></div>
-      <main id="main" className="main-content">{children}<footer className="page-footer"><span>CarePilot · Working alongside your existing systems</span><span>Stage 1 · Synthetic examples only</span></footer></main>
+      <main id="main" className="main-content">{children}<footer className="page-footer"><span>CarePilot · Working alongside your existing systems</span><span>Stage 3 · Synthetic data only</span></footer></main>
     </div>
   </div>;
 }

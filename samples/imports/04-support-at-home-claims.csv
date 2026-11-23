@@ -1,0 +1,5 @@
+externalId,Client ID,scheme,serviceExternalId,Service Date,Amount
+DEMO-C01,DEMO-P01,support_at_home,DEMO-S01,2026-11-20,125.50
+DEMO-C01,DEMO-P01,support_at_home,DEMO-S01,2026-11-20,125.50
+DEMO-C02,DEMO-P01,support_at_home,DEMO-S01,2026-11-20,twelve
+DEMO-C03,,support_at_home,DEMO-S01,2026-11-20,0.999

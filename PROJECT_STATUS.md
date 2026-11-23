@@ -1,6 +1,51 @@
 # CarePilot project status
 
-Stage: **Stage 2 complete — local database and security foundation.** Stage 3 has not started.
+Current delivery: **Stage 3 — local Integration Hub and manual imports complete and verified locally.** The uploaded Stage 3 brief and full PRD were read before code changes. The installed security-best-practices skill was applied. Existing Stage 2 baseline checks passed (10 unit + 23 PostgreSQL tests), with no unresolved critical blocker identified.
+
+## Stage 3 completed work
+
+- Integration Hub inside the existing tenant workspace, plus `/integrations` shortcut; ten potential sources, connection status, last record import, recent history and review/resume actions. Default light and optional dark themes remain.
+- Authenticated, bounded CSV/XLSX uploads; actual-content validation, encrypted originals, UUIDs/checksums, tenant/user provenance and failed-file history. ZIP bombs, sparse coordinates, macros, formulas, links, entities, unsafe paths and unsupported formats are rejected.
+- Nine minimum internal types, heading suggestions, editable/reusable mappings, explicit dates, exact decimal money, ISO timestamps, references, row errors, previews and protected validation downloads.
+- File/record deduplication and fingerprints; unchanged records skipped, conflicting records rejected, explicitly approved changes append immutable versions. Transaction locks protect simultaneous imports; preview configuration tokens prevent stale processing.
+- Durable 50-row batches, progress, atomic commits, safe retries, interrupted transaction rollback and explicit resume. No detached worker or paid job service.
+- New ImportFile, ImportMapping and ImportError models; ImportJob lifecycle/provenance/progress and SourceRecord fingerprints. Two additive local migrations with RLS, composite keys, counts/bounds, explicit permissions/grants and immutable source records. Existing rows preserved.
+- Synthetic CSV and XLSX samples for care services, claims, remittances, NDIS services and worker compliance, plus prerequisites and malicious-file rejection fixtures.
+- README, architecture, plan, detailed import contract, sample instructions, changed-file inventory and security review updated.
+
+## Stage 3 verification
+
+| Check | Final result |
+| --- | --- |
+| TypeScript | Passed |
+| ESLint | Passed, no warnings |
+| Vitest unit tests | 31 passed |
+| Real PostgreSQL integration tests | 38 passed |
+| Playwright full suite | 18 passed (9 desktop + 9 mobile Chromium) |
+| Production build | Passed |
+
+The four import browser cases also passed again after the final checksum-source safeguard. Desktop/mobile light and dark screenshots were inspected; no horizontal page overflow was detected. No test failures remain in the completed full suite. Firefox/WebKit, physical devices, screen-reader workflows, load/penetration testing and a real-data pilot were not tested.
+- Dependency audit: zero vulnerabilities across runtime and development dependencies.
+- Prisma schema/database diff: empty. Generated private-secret scan: passed. PRD unchanged.
+- Tests use only isolated local synthetic records; immutable test evidence is retained. Tests exercise all nine record structures, concurrency, version approval, missing references, permissions, reports and storage-failure recovery.
+- Initial failures (Prisma void lock return, default-field insert grants and a historical six-connection test assumption) were fixed. The first browser launch was blocked by the old dev server; it was stopped before testing the production build.
+
+## Stage 3 operating limits and handover
+
+Run `npm run db:local`, `npm run db:generate`, `npm run db:migrate`, then `npm run dev` from `/workspace/care_pilot`. Open `http://localhost:3000/integrations` and sign in as an Owner with the existing local password/MFA. Import `samples/imports/01-participants.csv` as Participants from source CSV, then follow the numbered sample instructions. No reset/reseed is required.
+
+Default limits are 2 MiB/2,000 rows/50 columns. Files are encrypted in PostgreSQL for this bounded local stage; no external object-storage service was introduced. Processing pauses if the browser closes and can be resumed from history. Vendor-native exports/API integrations are unverified, so only manual mapping is available. Error reports omit original values. Real provider data, retention/key rotation, unattended workers, ingress/load testing and independent security review remain outside this delivery. See [IMPORTS.md](IMPORTS.md).
+
+**At the original implementation handover, Stage 3 was local only.** The user has now authorised commit, push, merge and deployment of Stage 3 to the existing synthetic demo; see DEPLOYMENT.md for release controls. External business APIs, AI, reconciliation and compliance automation remain unimplemented. Stage 4 is not approved; recommended next work is its separately authorised deterministic financial discrepancy engine, respecting immutable source versions. See [STAGE3_FILES.md](STAGE3_FILES.md) for the complete file inventory.
+
+---
+
+## Historical Stage 1–2 delivery record
+
+The record below is retained for provenance. Its original stage/approval and unavailable-feature statements describe the earlier delivery; the Stage 3 section above and IMPORTS.md are current.
+
+
+Historical baseline: **Stage 2 complete — local database and security foundation.**
 
 The user approved Stage 2 and installation of the official security-best-practices skill. It is installed project-locally under `.agents/skills/security-best-practices`; the review is in `security_best_practices_report.md`.
 

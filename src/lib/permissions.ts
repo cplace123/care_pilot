@@ -10,6 +10,8 @@ export const permissionDescriptions = {
   'organisation.configure': 'Change organisation settings',
   'integrations.configure': 'Change integration display settings',
   'sources.read': 'View source record metadata',
+  'imports.read': 'View import history and validation reports',
+  'imports.write': 'Upload, map and process imports',
   'audit.read': 'View organisation audit history',
 } as const;
 export type PermissionKey = keyof typeof permissionDescriptions;

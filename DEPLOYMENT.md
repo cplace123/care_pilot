@@ -1,6 +1,6 @@
 # CarePilot synthetic demo deployment
 
-The user approved a free Vercel demo and a separate Supabase database, then requested Sydney. This authorizes demo hosting only; Stage 3 and real provider data remain outside scope.
+The user approved a free Vercel demo and a separate Supabase database, then requested Sydney. The user subsequently approved committing, pushing, merging and deploying Stage 3 to the same synthetic demo. Real provider data and paid resources remain outside scope.
 
 ## Resources
 
@@ -39,3 +39,13 @@ No paid plan, add-on, custom domain or real-data service was purchased. Free hos
 The first live authentication test correctly rejected an untrusted database TLS chain. The driver now includes Supabase's published Root 2021 CA in its trust bundle while retaining certificate and hostname verification. Public CA source: https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt . SHA-256 fingerprint: `807025AD50D4ED219D2C9C7D299C004F824EB00CF7F65AFEF607D07B72E6CAFA`, expires 26 April 2031. It is a public trust certificate, not a credential. Explicit pg connection fields prevent URL parameters from overriding TLS settings.
 
 The same live test found that Auth.js could place thrown backend messages into a login error URL. The credentials callback now returns a generic denial and logs only a fixed service-unavailable message. Unit tests cover this failure path and verified TLS configuration.
+
+## Stage 3 release
+
+Stage 3 publication is authorised. Release the reviewed GitHub main revision to the existing Vercel project and Sydney Supabase project above; preserve current credentials, accounts and data. No additional service or paid resource is required.
+
+Apply `202611240001_import_hub` and `202611240002_import_count_consistency` with their Prisma checksum/history entries, followed by `scripts/hosted-import-hardening.sql`. The latter removes Supabase's possible default API-role grants on the new permission function. The three new import tables enforce RLS and revoke all Data API grants in the migration itself. Existing Stage 2 routes remain compatible with the additive schema.
+
+The source snapshot must come from the merged revision, include Prisma migrations and runtime sources, and exclude private files, local dependencies, tests, sample rejection fixtures and generated output. The build regenerates Prisma. Node.js 24 and `syd1` remain configured. Upload defaults (2 MiB and 2,000 rows) fit the bounded demo workflow; no unattended worker is introduced.
+
+Local release verification: 31 unit, 38 PostgreSQL and 18 desktop/mobile browser tests passed, with four final import browser cases rechecked. TypeScript, ESLint, production build, dependency audit and schema diff passed. Verify hosted login/MFA, import preview/processing/retry, validation-report access, tenant denial, encryption and API grants after deployment. Do not treat a successful build alone as a successful release.
