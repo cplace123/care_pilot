@@ -201,3 +201,9 @@ Stage 2 was approved and completed. Stage 3 requires new approval. SourceRecord 
 ## Approved demo hosting follow-up
 
 The user subsequently approved a free Vercel/Supabase synthetic demo and requested Sydney. The Sydney database is created and seeded; the Seoul project remains untouched. The synthetic demo is live at https://carepilot-demo-eta.vercel.app with eleven live authentication/tenant/API checks passed. Hosted connection validation and bounded pooling are implemented. See DEPLOYMENT.md for resources, hardening, verification and deployment progress. Stage 3 remains unstarted.
+
+## Subsequent temporary public demo request
+
+Stage 3 was committed and merged through PR #3, and deployed successfully to the existing Sydney demo. All 28 hosted checks passed. The user then requested temporary removal of login prompts. A separate, explicitly public synthetic workspace now has opt-in automatic session entry; existing organisations and MFA remain protected. See DEPLOYMENT.md for the expiry, off switch, caps and access boundary. No Stage 4 functionality is introduced.
+
+Temporary demo verification: TypeScript, ESLint and production build passed; 33 unit tests, 43 PostgreSQL integration tests, 18 normal-login browser tests and four public-demo desktop/mobile tests passed. The normal suite skips the four opt-in cases, which were run separately with demo mode enabled. Tests cover one-hour sessions, expiry/disablement, restricted grants, foreign memberships, upload caps, CSRF and credential-free imports.

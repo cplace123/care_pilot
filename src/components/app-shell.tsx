@@ -15,10 +15,10 @@ export function AppShell({ organisation, userName, roles, permissions, section, 
     <aside className="sidebar"><Link href={base} aria-label="CarePilot home"><Brand/></Link>
       <Link href="/app" className="organisation-switch"><span className="org-avatar">{organisation.name.slice(0,1)}</span><span><strong>{organisation.name}</strong><small>Change organisation</small></span><span aria-hidden="true">⌄</span></Link>
       <p className="eyebrow nav-label">WORKSPACE</p>{nav}
-      <div className="sidebar-bottom"><div className="foundation-note"><Icon name="shield"/><strong>Your systems. Connected.</strong><p>Keep the tools you know.<br/>Bring the bigger picture together.</p></div><div className="profile"><span className="avatar">{userName.split(' ').map(n => n[0]).slice(0,2).join('')}</span><span><strong>{userName}</strong><small>{roles.join(', ')}</small></span></div><SignOut/></div>
+      <div className="sidebar-bottom"><div className="foundation-note"><Icon name="shield"/><strong>Your systems. Connected.</strong><p>Keep the tools you know.<br/>Bring the bigger picture together.</p></div><div className="profile"><span className="avatar">{userName.split(' ').map(n => n[0]).slice(0,2).join('')}</span><span><strong>{userName}</strong><small>{roles.join(', ')}</small></span></div><SignOut callbackUrl={roles.includes('Public Demo') ? '/login?account=1' : '/login'}/></div>
     </aside>
     <div className="workspace"><header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <strong>{navigation.find(n => n.slug === section)?.label ?? 'Home'}</strong></div><div className="top-actions"><span className="environment-label"><span/>Foundation preview</span><ThemeToggle/></div></header>
-      <div className="mobile-navigation"><Link href={base}><Brand/></Link><details key={section}><summary>Menu</summary>{nav}<Link className="nav-item" href="/app">Change organisation</Link><SignOut/></details></div>
+      <div className="mobile-navigation"><Link href={base}><Brand/></Link><details key={section}><summary>Menu</summary>{nav}<Link className="nav-item" href="/app">Change organisation</Link><SignOut callbackUrl={roles.includes('Public Demo') ? '/login?account=1' : '/login'}/></details></div>
       <main id="main" className="main-content">{children}<footer className="page-footer"><span>CarePilot · Working alongside your existing systems</span><span>Stage 3 · Synthetic data only</span></footer></main>
     </div>
   </div>;

@@ -112,3 +112,5 @@ See [ARCHITECTURE.md](ARCHITECTURE.md), [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_
 ## Hosted synthetic demo
 
 The approved Sydney synthetic demo is available at [carepilot-demo-eta.vercel.app](https://carepilot-demo-eta.vercel.app). See [DEPLOYMENT.md](DEPLOYMENT.md) for the hosting configuration and current status. Local setup commands remain unchanged. Hosted runtime configuration uses a separate restricted Supabase pooler account and fresh secrets; do not upload your local `.env`.
+
+Temporary hosted public demo access is opt-in and isolated from existing organisation accounts. It automatically opens a shared fictional-data workspace; use `/login?account=1` for normal credentials. See DEPLOYMENT.md for the expiry and disable switch. Local development keeps this mode disabled by default.

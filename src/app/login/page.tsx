@@ -1,7 +1,12 @@
+import { PublicDemoEntry } from '@/components/public-demo-entry';
+import { publicDemoConfig } from '@/lib/server/public-demo-config';
 import { Brand } from '@/components/brand';
 import { LoginForm } from '@/components/login-form';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Icon } from '@/components/icon';
-export default function Login() {
+export const dynamic = 'force-dynamic';
+export default async function Login({ searchParams }: { searchParams: Promise<{ account?: string }> }) {
+ const config = publicDemoConfig();
+ if (config && (await searchParams).account !== '1') return <PublicDemoEntry organisationId={config.organisationId}/>;
  return <main className="login-page"><section className="login-story"><Brand/><div className="login-story-copy"><span className="eyebrow">A CLEARER PICTURE OF CARE</span><h2>Your day.<br/>A little more<br/><em>under control.</em></h2><p>Bring your operations, compliance and finances into focus. Keep the systems your team already knows.</p><div className="system-orbit" aria-hidden="true"><div className="orbit-node">Care systems</div><div className="orbit-line"/><span className="orbit-centre"><Icon name="layers" size={32}/></span><div className="orbit-line"/><div className="orbit-node">Finance &amp; records</div></div></div><span className="story-footer">Built for Australian aged care &amp; NDIS providers</span></section><section className="login-panel"><div className="login-top"><span className="environment-label"><span/>Foundation preview</span><ThemeToggle/></div><div className="login-card"><span className="eyebrow">WELCOME TO CAREPILOT</span><h1>Good to see you.</h1><p className="lead">Sign in to your organisation’s workspace.</p><LoginForm/><div className="login-security"><Icon name="shield" size={18}/><span>Secure access. Your organisation’s information stays yours.</span></div></div><p className="login-bottom">Stage 1 · Use synthetic demonstration accounts only.</p></section></main>;
 }

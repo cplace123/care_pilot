@@ -1,4 +1,5 @@
 import 'server-only';
+import { publicDemoConfig } from './public-demo-config';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { Prisma, ImportJob } from '@/generated/prisma/client';
@@ -36,6 +37,9 @@ async function tableFor(tx: Tx, job: ImportJob) {
 export async function uploadImport(tx: Tx, organisationId: string, input: unknown, bytes: Buffer) {
  const { provider, dataType, filename } = uploadSchema.parse(input);
  const format = filename.split('.').at(-1)!.toLowerCase();
+ const [context] = await tx.$queryRaw<{ userId: string }[]>`SELECT current_setting('app.user_id') AS "userId"`;
+ const publicDemo = publicDemoConfig()?.userId === context.userId;
+ if (publicDemo && bytes.length > 1048576) throw new RequestError(413, 'Public demo files are limited to 1 MiB');
  // Lock before connection creation, quotas and checksum lookup to cover concurrent uploads.
  await lockSource(tx, organisationId, 'upload-admission');
  let connection = await tx.integrationConnection.findUnique({ where: { organisationId_provider: { organisationId, provider } } });
@@ -52,8 +56,7 @@ export async function uploadImport(tx: Tx, organisationId: string, input: unknow
   await event(tx, organisationId, existing.jobs[0].id, 'import.duplicate_file');
   return { job: publicJob(existing.jobs[0]), duplicate: true };
  }
- if (await tx.importJob.count({ where: { organisationId, createdAt: { gt: new Date(Date.now() - 86400000) } } }) >= 100) throw new RequestError(429, 'Daily import limit reached');
- const [context] = await tx.$queryRaw<{ userId: string }[]>`SELECT current_setting('app.user_id') AS "userId"`;
+ if (await tx.importJob.count({ where: { organisationId, createdAt: { gt: new Date(Date.now() - 86400000) } } }) >= (publicDemo ? 10 : 100)) throw new RequestError(429, 'Daily import limit reached');
  const fileId = randomUUID();
  await tx.importFile.create({ data: { id: fileId, organisationId, connectionId: connection.id, uploadedById: context.userId, checksum: hash, format, byteSize: bytes.length, encryptedContent: encryptFile(bytes, `${organisationId}:${fileId}`) } });
  let job = await tx.importJob.create({ data: { organisationId, connectionId: connection.id, initiatedById: context.userId, fileId, dataType, sourceName: provider, status: 'UPLOADED', idempotencyKey: `${connection.id}:${hash}` } });
@@ -61,6 +64,7 @@ export async function uploadImport(tx: Tx, organisationId: string, input: unknow
  job = await tx.importJob.update({ where: { id: job.id }, data: { status: 'VALIDATING' } });
  try {
   const table = await parseFile(bytes, format);
+  if (publicDemo && table.rows.length > 500) throw new RequestError(400, 'Public demo files are limited to 500 rows');
   job = await tx.importJob.update({ where: { id: job.id }, data: { status: 'MAPPING_REQUIRED', recordCount: table.rows.length, mapping: suggestMapping(table.headers, dataType) } });
  } catch (e) {
   if (!(e instanceof RequestError)) throw e;

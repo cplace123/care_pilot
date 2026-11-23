@@ -1,4 +1,5 @@
 import 'server-only';
+import { authenticatePublicDemo } from './public-demo-auth';
 import type { NextAuthOptions } from 'next-auth';
 import { getServerSession } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
@@ -13,7 +14,11 @@ export function authOptions(): NextAuthOptions {
     secret: getEnv().NEXTAUTH_SECRET,
     session: { strategy: 'jwt', maxAge: SESSION_SECONDS },
     pages: { signIn: '/login', error: '/login' },
-    providers: [Credentials({ name: 'CarePilot', credentials: { email: { type: 'email' }, password: { type: 'password' }, code: { type: 'text' } }, async authorize(credentials) {
+    providers: [Credentials({ name: 'CarePilot', credentials: { email: { type: 'email' }, password: { type: 'password' }, code: { type: 'text' }, demo: { type: 'text' } }, async authorize(credentials) {
+      if (credentials?.demo === 'true') {
+        try { return await authenticatePublicDemo(db()); }
+        catch { console.error('CarePilot demo access unavailable'); return null; }
+      }
       const parsed = z.object({ email: z.string().email().max(254), password: z.string().min(1).max(128), code: z.string().max(6).optional() }).safeParse(credentials);
       if (!parsed.success) return null;
       try { return await authenticate(db(), parsed.data.email, parsed.data.password, parsed.data.code); }
