@@ -2,6 +2,7 @@ import { z } from 'zod';
 const postgresUrl = z.string().url().refine(v => ['postgres:', 'postgresql:'].includes(new URL(v).protocol), 'Use a PostgreSQL URL');
 export const envSchema = z.object({
   DATABASE_URL: postgresUrl,
+  DATABASE_PROJECT_REF: z.string().regex(/^[a-z]{20}$/).optional(),
   AUTH_ENCRYPTION_KEY: z.string().regex(/^[0-9a-f]{64}$/, 'Generate a 32-byte hex encryption key'),
   NEXTAUTH_URL: z.string().url(),
   NEXTAUTH_SECRET: z.string().min(32).refine(v => !v.startsWith('REPLACE'), 'Generate a fresh secret'),
@@ -13,6 +14,12 @@ export function getEnv() {
   const appUrl = new URL(parsed.data.NEXTAUTH_URL);
   const localBuildTest = process.env.LOCAL_PRODUCTION_TEST === 'true' && ['localhost', '127.0.0.1', '[::1]'].includes(appUrl.hostname);
   if (parsed.data.NODE_ENV === 'production' && appUrl.protocol !== 'https:' && !localBuildTest) throw new Error('Production requires HTTPS');
-  if (new URL(parsed.data.DATABASE_URL).username !== 'carepilot_app') throw new Error('DATABASE_URL must use the restricted carepilot_app role');
+  const databaseUrl = new URL(parsed.data.DATABASE_URL);
+  const projectRef = parsed.data.DATABASE_PROJECT_REF;
+  const expectedUser = projectRef ? `carepilot_app.${projectRef}` : 'carepilot_app';
+  if (databaseUrl.username !== expectedUser) throw new Error('DATABASE_URL must use the restricted carepilot_app role');
+  if (projectRef && (!/^aws-[0-9]+-[a-z0-9-]+\.pooler\.supabase\.com$/.test(databaseUrl.hostname) || databaseUrl.searchParams.get('sslmode') !== 'verify-full')) {
+    throw new Error('Hosted database requires the Supabase pooler with verified TLS');
+  }
   return parsed.data;
 }

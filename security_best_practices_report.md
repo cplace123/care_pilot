@@ -31,3 +31,7 @@ The existing Auth.js implementation was retained. Stage 2 strengthens tenant con
 ## Validation boundary
 
 Results are recorded in PROJECT_STATUS.md. All database tests use local PostgreSQL and synthetic identities. Application credentials are non-superuser/non-BYPASSRLS; migration credentials remain privileged and local. No production system, external integration, AI provider or deployment was accessed. Browser coverage uses Chromium desktop/mobile emulation; other engines, load testing and independent security assessment remain outstanding.
+
+## Approved demo deployment follow-up
+
+A live hosted test exposed backend error text in the Auth.js credentials redirect when the database TLS connection failed. The credentials callback now catches service exceptions and returns a generic rejection, with a regression test in tests/unit/auth-boundary.test.ts. Supabase's published CA is explicitly trusted without disabling certificate verification. See DEPLOYMENT.md for the certificate fingerprint and hosted validation results.

@@ -152,3 +152,7 @@ Stage 2 was approved and completed. Stage 3 requires new approval. SourceRecord 
 - `vitest.config.ts`
 
 **Generated locally and intentionally excluded from Git:** `.env`, `.demo-mfa.json`, `src/generated/prisma/`, `node_modules/`, `.next/`, TypeScript build cache and Playwright artifacts under `test-results/`. Local Docker volume contains only seeded fictional data.
+
+## Approved demo hosting follow-up
+
+The user subsequently approved a free Vercel/Supabase synthetic demo and requested Sydney. The Sydney database is created and seeded; the Seoul project remains untouched. The synthetic demo is live at https://carepilot-demo-eta.vercel.app with eleven live authentication/tenant/API checks passed. Hosted connection validation and bounded pooling are implemented. See DEPLOYMENT.md for resources, hardening, verification and deployment progress. Stage 3 remains unstarted.

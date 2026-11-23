@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { hashPassword, verifyPassword } from '@/lib/password';
-import { envSchema } from '@/lib/env';
+import { envSchema, getEnv } from '@/lib/env';
 import { defaultRoles, hasPermission } from '@/lib/permissions';
 import { totp, verifyTotp, generateMfaSecret, encryptMfaSecret, decryptMfaSecret } from '@/lib/mfa';
 describe('password security', () => {
@@ -48,5 +48,21 @@ describe('configuration and permissions', () => {
   expect(hasPermission(defaultRoles['AI Assistant'], 'dashboard.read')).toBe(false);
   expect(hasPermission(defaultRoles['Finance Manager'], 'finance.read')).toBe(true);
   expect(hasPermission(defaultRoles['Compliance Manager'], 'finance.read')).toBe(false);
+ });
+});
+
+
+describe('hosted database configuration', () => {
+ it('accepts only the restricted project-scoped role with verified Supabase TLS', () => {
+  const ref = 'a'.repeat(20);
+  vi.stubEnv('NEXTAUTH_SECRET', 'a'.repeat(40)); vi.stubEnv('AUTH_ENCRYPTION_KEY', 'b'.repeat(64));
+  vi.stubEnv('NEXTAUTH_URL', 'https://demo.example'); vi.stubEnv('DATABASE_PROJECT_REF', ref);
+  const base = `postgresql://carepilot_app.${ref}:synthetic@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres`;
+  try {
+   vi.stubEnv('DATABASE_URL', base + '?sslmode=verify-full'); expect(getEnv().DATABASE_PROJECT_REF).toBe(ref);
+   vi.stubEnv('DATABASE_URL', base + '?sslmode=require'); expect(() => getEnv()).toThrow('verified TLS');
+   vi.stubEnv('DATABASE_URL', base.replace('carepilot_app.', 'postgres.') + '?sslmode=verify-full'); expect(() => getEnv()).toThrow('restricted');
+   vi.stubEnv('DATABASE_URL', base.replace('aws-0-ap-southeast-2.pooler.supabase.com', 'foreign.example') + '?sslmode=verify-full'); expect(() => getEnv()).toThrow('verified TLS');
+  } finally { vi.unstubAllEnvs(); }
  });
 });
