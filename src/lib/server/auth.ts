@@ -16,7 +16,12 @@ export function authOptions(): NextAuthOptions {
     providers: [Credentials({ name: 'CarePilot', credentials: { email: { type: 'email' }, password: { type: 'password' }, code: { type: 'text' } }, async authorize(credentials) {
       const parsed = z.object({ email: z.string().email().max(254), password: z.string().min(1).max(128), code: z.string().max(6).optional() }).safeParse(credentials);
       if (!parsed.success) return null;
-      return authenticate(db(), parsed.data.email, parsed.data.password, parsed.data.code);
+      try { return await authenticate(db(), parsed.data.email, parsed.data.password, parsed.data.code); }
+      catch {
+        // Auth.js serialises thrown authorize messages into redirect URLs. Never expose database details.
+        console.error('CarePilot authentication service unavailable');
+        return null;
+      }
     } })],
     callbacks: {
       async jwt({ token, user }) { if (user) { token.sub = user.id; token.sessionId = user.sessionId; } return token; },

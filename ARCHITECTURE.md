@@ -94,3 +94,7 @@ PATCH handlers permit only organisation name or integration display name, using 
 Application RBAC restricts writes to Owner/Administrator. SQL grants also restrict writable columns, while RLS ensures tenant membership. RLS is not claimed to enforce every application permission against arbitrary SQL by a compromised server. Authentication infrastructure remains global and internal. The database owner can alter triggers/schema; append-only controls protect normal SQL operations, not a malicious superuser. External immutable archival is future operational work.
 
 Credentials are not stored in plaintext: this stage stores only validated opaque secret-manager references, accepts none through public APIs and has no secret manager integration. A reference is not encryption and must never contain an actual secret. Imported JSON is reserved for a future explicitly approved synthetic import workflow; production retention, minimisation and encryption-at-rest require review before real data.
+
+## Hosted demo adaptation
+
+The approved synthetic demo uses Supabase PostgreSQL's shared pooler with a project-scoped `carepilot_app.<ref>` username. DATABASE_PROJECT_REF validation preserves the restricted underlying role, limits hosts to Supabase poolers and requires verified TLS. Prisma's pg adapter pool has at most three connections per application instance. Supabase Data API grants are revoked; Auth.js remains the authentication system. See DEPLOYMENT.md and scripts/hosted-database-hardening.sql for hosting-specific controls.

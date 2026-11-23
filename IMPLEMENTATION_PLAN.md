@@ -30,3 +30,7 @@ The complete MVP registration/onboarding and operational security programme are 
 6. Extend real-PostgreSQL and browser tests, verify existing flows, document results and remaining operational risks.
 
 Stage 3 is not authorized. Recommended next work is a separately scoped synthetic import/validation workflow, after confirming source formats and mappings against the PRD. No processor, AI, reconciliation, compliance automation, external connection or deployment is included here.
+
+## Approved hosting follow-up
+
+Deploy the existing Stage 2 application as a synthetic-only demo on free resources: create the requested Sydney database, apply the existing migrations with restricted role/API grants, configure fresh hosted secrets, build on Vercel in Sydney, then verify live login/logout and tenant boundaries. Track completion in DEPLOYMENT.md; no new product stage is included.

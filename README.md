@@ -98,3 +98,7 @@ This explicit exception accepts HTTP only for a localhost application URL. Real 
 - `tests`: Vitest unit/integration suites and Playwright browser suites.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md), [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) and [PROJECT_STATUS.md](PROJECT_STATUS.md) for decisions, verification results, limitations and the full changed-file inventory.
+
+## Hosted synthetic demo
+
+The approved Sydney synthetic demo is live at [carepilot-demo-eta.vercel.app](https://carepilot-demo-eta.vercel.app). See [DEPLOYMENT.md](DEPLOYMENT.md) for the hosting configuration and current status. Local setup commands remain unchanged. Hosted runtime configuration uses a separate restricted Supabase pooler account and fresh secrets; do not upload your local `.env`.
