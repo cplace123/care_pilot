@@ -110,3 +110,7 @@ Credentials are not stored in plaintext: this stage stores only validated opaque
 ## Hosted demo adaptation
 
 The approved synthetic demo uses Supabase PostgreSQL's shared pooler with a project-scoped `carepilot_app.<ref>` username. DATABASE_PROJECT_REF validation preserves the restricted underlying role, limits hosts to Supabase poolers and requires verified TLS. Prisma's pg adapter pool has at most three connections per application instance. Supabase Data API grants are revoked; Auth.js remains the authentication system. See DEPLOYMENT.md and scripts/hosted-database-hardening.sql for hosting-specific controls.
+
+## Temporary public demo
+
+An opt-in Auth.js credentials flow creates short-lived sessions for one isolated synthetic organisation. Server checks pin public sessions to that organisation, revalidate an allowlisted Public Demo role, and reject expired or disabled public access. Existing tenant authentication and privileged MFA remain required. Public imports have smaller admission limits. The UI marks the workspace as shared and requires fictional data. Configuration, expiry and immediate disable instructions are in DEPLOYMENT.md.

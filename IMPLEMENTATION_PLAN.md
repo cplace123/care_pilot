@@ -44,3 +44,7 @@ Historical Stage 2 handover: Stage 3 was not yet authorized. Recommended next wo
 ## Approved hosting follow-up
 
 Deploy the existing Stage 2 application as a synthetic-only demo on free resources: create the requested Sydney database, apply the existing migrations with restricted role/API grants, configure fresh hosted secrets, build on Vercel in Sydney, then verify live login/logout and tenant boundaries. Track completion in DEPLOYMENT.md; no new product stage is included.
+
+### Authorised follow-up: temporary login-free demo
+
+Reuse Auth.js and tenant enforcement for automatic entry into a separate synthetic organisation. Verify expiry, disablement, accidental extra memberships/grants, upload limits, CSRF, and desktop/mobile entry before publication. Preserve private accounts and Stage 3 boundaries; no Stage 4 functionality.
