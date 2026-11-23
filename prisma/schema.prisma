@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client"
+  output = "../src/generated/prisma"
+}
+datasource db {
+  provider = "postgresql"
+}
+model Organisation {
+  updatedAt DateTime @default(now()) @updatedAt
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  createdAt DateTime @default(now())
+  memberships OrganisationMembership[]
+  roles Role[]
+  connections IntegrationConnection[]
+  imports ImportJob[]
+  sourceRecords SourceRecord[]
+  events ActivityEvent[]
+}
+model User {
+  updatedAt DateTime @default(now()) @updatedAt
+  id String @id @default(uuid()) @db.Uuid
+  email String @unique
+  name String
+  passwordHash String
+  mfaSecretEncrypted String?
+  mfaLastStep BigInt?
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  memberships OrganisationMembership[]
+  sessions AuthSession[]
+  activityEvents ActivityEvent[]
+}
+model OrganisationMembership {
+  updatedAt DateTime @default(now()) @updatedAt
+  @@map("Membership")
+  id String @id @default(uuid()) @db.Uuid
+  organisationId String @db.Uuid
+  userId String @db.Uuid
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  roles MembershipRole[]
+  @@unique([organisationId, userId])
+  @@unique([organisationId, id])
+  @@index([userId])
+}
+model Role {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  id String @id @default(uuid()) @db.Uuid
+  organisationId String @db.Uuid
+  name String
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  members MembershipRole[]
+  permissions RolePermission[]
+  @@unique([organisationId, name])
+  @@unique([organisationId, id])
+}
+model Permission {
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  key String @id
+  description String
+  roles RolePermission[]
+}
+model RolePermission {
+  organisationId String @db.Uuid
+  roleId String @db.Uuid
+  permissionKey String
+  role Role @relation(fields: [organisationId, roleId], references: [organisationId, id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionKey], references: [key], onDelete: Restrict)
+  @@id([organisationId, roleId, permissionKey])
+}
+model MembershipRole {
+  organisationId String @db.Uuid
+  membershipId String @db.Uuid
+  roleId String @db.Uuid
+  membership OrganisationMembership @relation(fields: [organisationId, membershipId], references: [organisationId, id], onDelete: Cascade)
+  role Role @relation(fields: [organisationId, roleId], references: [organisationId, id], onDelete: Restrict)
+  @@id([organisationId, membershipId, roleId])
+}
+enum ConnectionStatus {
+  NOT_CONNECTED
+  CONNECTED
+  ERROR
+}
+model IntegrationConnection {
+  updatedAt DateTime @default(now()) @updatedAt
+  id String @id @default(uuid()) @db.Uuid
+  organisationId String @db.Uuid
+  provider String
+  status ConnectionStatus @default(NOT_CONNECTED)
+  readOnly Boolean @default(true)
+  displayName String? @db.VarChar(120)
+  credentialReference String? @db.VarChar(200)
+  lastSuccessfulSyncAt DateTime?
+  createdAt DateTime @default(now())
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  imports ImportJob[]
+  @@unique([organisationId, id])
+  @@unique([organisationId, provider])
+}
+enum ImportStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+model ImportJob {
+  updatedAt DateTime @default(now()) @updatedAt
+  id String @id @default(uuid()) @db.Uuid
+  organisationId String @db.Uuid
+  connectionId String @db.Uuid
+  sourceName String
+  status ImportStatus @default(QUEUED)
+  idempotencyKey String
+  recordCount Int @default(0)
+  errorCode String?
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  connection IntegrationConnection @relation(fields: [organisationId, connectionId], references: [organisationId, id], onDelete: Restrict)
+  records SourceRecord[]
+  @@unique([organisationId, connectionId, id])
+  @@unique([organisationId, idempotencyKey])
+  @@index([organisationId, createdAt])
+}
+model ActivityEvent {
+  actor User? @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  metadata Json @default("{}")
+  id String @id @default(uuid()) @db.Uuid
+  organisationId String? @db.Uuid
+  actorId String? @db.Uuid
+  action String
+  resourceId String?
+  createdAt DateTime @default(now())
+  organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  @@index([organisationId, createdAt])
+}
+model AuthSession {
+  id String @id
+  mfaVerified Boolean @default(false)
+  userId String @db.Uuid
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([expiresAt])
+}
+model LoginThrottle {
+  key String @id
+  attempts Int
+  resetAt DateTime
+}
+
+// Immutable snapshots prepared for a future import worker; no processing is implemented.
+model SourceRecord {
+  id String @id @default(uuid()) @db.Uuid
+  organisationId String @db.Uuid
+  connectionId String @db.Uuid
+  importJobId String @db.Uuid
+  sourceType String @db.VarChar(80)
+  externalId String @db.VarChar(200)
+  contentHash String @db.Char(64)
+  payload Json
+  createdAt DateTime @default(now())
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  importJob ImportJob @relation(fields: [organisationId, connectionId, importJobId], references: [organisationId, connectionId, id], onDelete: Restrict)
+  @@unique([organisationId, importJobId, sourceType, externalId])
+  @@index([organisationId, connectionId, sourceType, externalId])
+  @@index([organisationId, createdAt])
+}
