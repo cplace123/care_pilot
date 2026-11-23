@@ -1,6 +1,16 @@
 # CarePilot implementation plan
 
-## Scope and source
+## Stage 3 — approved implementation
+
+1. **Review — complete.** Read the uploaded Stage 3 brief, full PRD, project documents, schema/authentication and installed security skill. Baseline: 10 unit + 23 PostgreSQL tests passed; no unresolved critical Stage 2 finding.
+2. **Schema/security — complete.** Add encrypted file metadata, reusable mappings, row errors, job progress/provenance, tenant keys/indexes/RLS and explicit import permissions. Preserve all existing rows and the hosted demo.
+3. **Parsing/mapping — complete.** Bounded CSV and XLSX parsing, hostile ZIP inspection, deterministic decimal/date/timestamp validation, nine minimal record types, reference checks, checksums, fingerprints and immutable version policy.
+4. **Services/UI — complete.** Upload, configure, preview, process/resume, history and protected report endpoints; shared responsive shell with ten potential sources, reusable templates and clear statuses. Durable client-driven batches, no paid queue or API connections.
+5. **Verification — complete.** 31 unit, 38 PostgreSQL and 18 desktop/mobile browser tests passed, as did typecheck/lint/build, dependency audit and schema diff. Security review and documentation are current; exact results and limitations are in PROJECT_STATUS.md.
+
+Stage 4 remains unapproved. No financial discrepancy engine, AI, compliance automation, production migration or deployment is included.
+
+## Historical Stage 1 scope and source
 
 Read the complete PRD v1.0 (all 27 sections and role tables) before implementation. The user's Stage 1 brief limits this delivery to the foundation, even though the PRD describes a much larger MVP. Preserve the original document and repository; do not deploy, connect business services or start Stage 2.
 
@@ -29,7 +39,7 @@ The complete MVP registration/onboarding and operational security programme are 
 5. Add protected organisation/integration configuration and read-only audit/source metadata APIs; enforce live permissions, strict input, same-origin mutation requests and safe errors.
 6. Extend real-PostgreSQL and browser tests, verify existing flows, document results and remaining operational risks.
 
-Stage 3 is not authorized. Recommended next work is a separately scoped synthetic import/validation workflow, after confirming source formats and mappings against the PRD. No processor, AI, reconciliation, compliance automation, external connection or deployment is included here.
+Historical Stage 2 handover: Stage 3 was not yet authorized. Recommended next work is a separately scoped synthetic import/validation workflow, after confirming source formats and mappings against the PRD. No processor, AI, reconciliation, compliance automation, external connection or deployment is included here.
 
 ## Approved hosting follow-up
 

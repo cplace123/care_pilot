@@ -1,0 +1,3 @@
+externalId,scheme,claimExternalId,paymentDate,paymentAmount
+DEMO-PAY01,support_at_home,DEMO-C01,2026-11-22,125.50
+DEMO-PAY02,support_at_home,MISSING-CLAIM,2026-11-22,50.00

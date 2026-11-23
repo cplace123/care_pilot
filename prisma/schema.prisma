@@ -16,6 +16,9 @@ model Organisation {
   imports ImportJob[]
   sourceRecords SourceRecord[]
   events ActivityEvent[]
+  importFiles ImportFile[]
+  importMappings ImportMapping[]
+  importErrors ImportError[]
 }
 model User {
   updatedAt DateTime @default(now()) @updatedAt
@@ -30,6 +33,8 @@ model User {
   memberships OrganisationMembership[]
   sessions AuthSession[]
   activityEvents ActivityEvent[]
+  initiatedImports ImportJob[]
+  uploadedFiles ImportFile[]
 }
 model OrganisationMembership {
   updatedAt DateTime @default(now()) @updatedAt
@@ -99,16 +104,40 @@ model IntegrationConnection {
   createdAt DateTime @default(now())
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Restrict)
   imports ImportJob[]
+  files ImportFile[]
   @@unique([organisationId, id])
   @@unique([organisationId, provider])
 }
 enum ImportStatus {
+  UPLOADED
+  VALIDATING
+  MAPPING_REQUIRED
+  READY
+  PROCESSING
+  COMPLETED_WITH_ERRORS
   QUEUED
   RUNNING
   COMPLETED
   FAILED
 }
 model ImportJob {
+  initiatedById String? @db.Uuid
+  initiatedBy User? @relation(fields: [initiatedById], references: [id], onDelete: Restrict)
+  fileId String? @db.Uuid
+  file ImportFile? @relation(fields: [organisationId, connectionId, fileId], references: [organisationId, connectionId, id], onDelete: Restrict)
+  dataType String? @db.VarChar(80)
+  mapping Json @default("{}")
+  dateFormat String @default("ISO")
+  allowVersions Boolean @default(false)
+  processedCount Int @default(0)
+  successCount Int @default(0)
+  rejectedCount Int @default(0)
+  unchangedCount Int @default(0)
+  updatedCount Int @default(0)
+  errors ImportError[]
+  @@unique([organisationId, id])
+  @@unique([organisationId, fileId])
+
   updatedAt DateTime @default(now()) @updatedAt
   id String @id @default(uuid()) @db.Uuid
   organisationId String @db.Uuid
@@ -155,8 +184,10 @@ model LoginThrottle {
   resetAt DateTime
 }
 
-// Immutable snapshots prepared for a future import worker; no processing is implemented.
+// Immutable, versioned source snapshots. No update/delete grants.
 model SourceRecord {
+  fingerprint String? @db.Char(64)
+  @@index([organisationId, connectionId, sourceType, fingerprint])
   id String @id @default(uuid()) @db.Uuid
   organisationId String @db.Uuid
   connectionId String @db.Uuid
@@ -171,4 +202,48 @@ model SourceRecord {
   @@unique([organisationId, importJobId, sourceType, externalId])
   @@index([organisationId, connectionId, sourceType, externalId])
   @@index([organisationId, createdAt])
+}
+
+model ImportFile {
+  id String @id @default(uuid()) @db.Uuid
+  organisationId String @db.Uuid
+  connectionId String @db.Uuid
+  uploadedById String @db.Uuid
+  checksum String @db.Char(64)
+  format String @db.VarChar(4)
+  byteSize Int
+  encryptedContent Bytes
+  createdAt DateTime @default(now())
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  connection IntegrationConnection @relation(fields: [organisationId, connectionId], references: [organisationId, id], onDelete: Restrict)
+  jobs ImportJob[]
+  @@unique([organisationId, connectionId, id])
+  @@unique([organisationId, id])
+  @@unique([organisationId, connectionId, checksum])
+}
+model ImportMapping {
+  id String @id @default(uuid()) @db.Uuid
+  organisationId String @db.Uuid
+  provider String @db.VarChar(80)
+  dataType String @db.VarChar(80)
+  name String @db.VarChar(80)
+  mapping Json
+  dateFormat String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  @@unique([organisationId, provider, dataType, name])
+}
+model ImportError {
+  id String @id @default(uuid()) @db.Uuid
+  organisationId String @db.Uuid
+  importJobId String @db.Uuid
+  row Int
+  code String @db.VarChar(80)
+  field String @db.VarChar(80)
+  createdAt DateTime @default(now())
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  importJob ImportJob @relation(fields: [organisationId, importJobId], references: [organisationId, id], onDelete: Restrict)
+  @@unique([organisationId, importJobId, row, field, code])
 }

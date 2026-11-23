@@ -106,7 +106,7 @@ test('protects foundation APIs and rejects cross-origin or overprivileged writes
  expect((await api.get(`/api/organisations/${b}`)).status()).toBe(403);
  expect((await api.get(`/api/organisations/${a}/sources`)).status()).toBe(200);
  const connections = await (await api.get(`/api/organisations/${a}/integrations`)).json();
- expect(connections).toHaveLength(6);
+ expect(connections.map((c: { provider: string }) => c.provider)).toEqual(expect.arrayContaining(['ShiftCare','AlayaCare','Visualcare','Lumary','Xero','MYOB']));
  expect(JSON.stringify(connections)).not.toContain('credentialReference');
  const path = `/api/organisations/${a}/integrations/${connections[0].id}`;
  expect((await api.patch(path, { headers: { origin: 'https://foreign.example' }, data: { displayName: 'Blocked' } })).status()).toBe(403);
@@ -117,4 +117,57 @@ test('protects foundation APIs and rejects cross-origin or overprivileged writes
   const events = await (await api.get(`/api/organisations/${a}/audit`)).json();
   expect(events.some((event: { action: string }) => event.action === 'integration.configuration_changed')).toBe(true);
  } finally { await admin.integrationConnection.update({ where: { id: connections[0].id }, data: { displayName: connections[0].displayName } }); }
+});
+
+test('uploads, maps, previews, imports and recognises a duplicate file in the Integration Hub', async ({page}) => {
+ await login(page); await page.goto('/integrations');
+ await expect(page).toHaveURL(new RegExp(`/app/${a}/integrations`));
+ const id = `UI-${crypto.randomUUID()}`;
+ const payload = {name:'synthetic-participants.csv',mimeType:'text/csv',buffer:Buffer.from(`externalId,displayName\n${id},Synthetic ${id}`)};
+ await page.getByRole('button',{name:'Import Data',exact:true}).click();
+ await page.getByLabel('CSV or Excel file').setInputFiles(payload);
+ await page.getByRole('button',{name:'Upload and map'}).click();
+ await expect(page.getByRole('heading',{name:'2. Map and preview'})).toBeVisible();
+ await expect(page.getByLabel('External record ID')).toHaveValue('externalId');
+ await page.getByLabel('Save mapping as').fill(`Synthetic ${id}`);
+ await page.getByRole('button',{name:'Validate and preview'}).click();
+ await expect(page.getByText('1 new · 0 unchanged · 0 updated · 0 conflicting / invalid')).toBeVisible();
+ await expect(page.locator('table')).toContainText(id);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.screenshot({path:`test-results/import-preview-${test.info().project.name}.png`,fullPage:true});
+ await page.getByRole('button',{name:'Import valid records'}).click();
+ await expect(page.getByRole('status')).toContainText('Import complete: 1 saved, 0 unchanged, 0 rejected');
+ const reportHref=await page.getByRole('link',{name:'Download validation report'}).getAttribute('href');
+ const report=await page.request.get(reportHref!);expect(report.status()).toBe(200);expect(report.headers()['content-disposition']).toContain('attachment');expect(await report.text()).not.toContain(id);
+ await page.getByRole('button',{name:'Import Data',exact:true}).click();await page.getByLabel('CSV or Excel file').setInputFiles(payload);await page.getByRole('button',{name:'Upload and map'}).click();
+ await expect(page.getByRole('status')).toContainText('already uploaded');
+ await page.getByRole('button',{name:'Switch to dark theme'}).click();
+ await page.screenshot({path:`test-results/import-history-dark-${test.info().project.name}.png`,fullPage:true});
+});
+
+test('protects import HTTP endpoints and validates XLSX files and row reports', async ({page,request}) => {
+ const root=`/api/organisations/${a}/imports`;
+ expect((await request.get(root)).status()).toBe(401);
+ expect((await request.post(root+'?provider=CSV&dataType=participants&filename=x.csv',{data:'externalId\nPRIVATE','headers':{'content-type':'application/octet-stream',origin:'http://localhost:3000'}})).status()).toBe(401);
+ await login(page);
+ const headers={origin:'http://localhost:3000','content-type':'application/octet-stream'};
+ const {readFile}=await import('node:fs/promises');
+ const upload=await page.request.post(root+'?provider=Excel&dataType=participants&filename=synthetic.xlsx',{headers,data:await readFile('samples/imports/01-participants.xlsx')});expect(upload.status()).toBe(200);
+ const data=await upload.json();const jobUrl=`${root}/${data.job.id}`;
+ expect((await page.request.get(jobUrl.replace(a,b))).status()).toBe(403);
+ expect((await page.request.get(jobUrl.replace(a,b)+'/report')).status()).toBe(403);
+ expect((await page.request.post(root+'?provider=CSV&dataType=participants&filename=x.csv',{headers:{...headers,origin:'https://evil.invalid'},data:'externalId\nPRIVATE'})).status()).toBe(403);
+ expect((await page.request.post(root+'?provider=CSV&dataType=participants&filename=..%2Fx.csv',{headers,data:'externalId\nPRIVATE'})).status()).toBe(400);
+ const detail=await (await page.request.get(jobUrl)).json();expect(detail.headers).toContain('externalId');expect(detail).not.toHaveProperty('encryptedContent');
+ if(data.job.status==='MAPPING_REQUIRED') {
+  const preview=await page.request.patch(jobUrl,{headers:{origin:'http://localhost:3000'},data:{mapping:{externalId:'externalId',displayName:'displayName'},dateFormat:'ISO',allowVersions:false}});expect(preview.status()).toBe(200);
+  const token=(await preview.json()).job.configurationToken;
+  const imported=await page.request.post(jobUrl+'/process',{headers:{origin:'http://localhost:3000'},data:{configurationToken:token}});expect(imported.status()).toBe(200);expect((await imported.json()).job.status).toBe('COMPLETED');
+ }
+ const invalid=await page.request.post(root+'?provider=CSV&dataType=services&filename=invalid.csv',{headers,data:`externalId,participantExternalId,scheme,serviceDate\nERR-${crypto.randomUUID()},MISSING,ndis,2026-02-30`});
+ const badId=(await invalid.json()).job.id;
+ await page.request.patch(`${root}/${badId}`,{headers:{origin:'http://localhost:3000'},data:{mapping:{externalId:'externalId',participantExternalId:'participantExternalId',scheme:'scheme',serviceDate:'serviceDate'},dateFormat:'ISO'}});
+ const report=await page.request.get(`${root}/${badId}/report`);expect(report.status()).toBe(200);expect(await report.text()).toContain('INVALID_DATE');expect(report.headers()['cache-control']).toContain('no-store');
+ await page.context().clearCookies();await login(page,'auditor@harbour.example');
+ expect((await page.request.get(jobUrl)).status()).toBe(403);expect((await page.request.get(jobUrl+'/report')).status()).toBe(403);
 });

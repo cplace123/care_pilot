@@ -1,6 +1,18 @@
-# CarePilot architecture — Stages 1–2
+# CarePilot architecture — Stages 1–3
 
-## System boundary
+## Stage 3 extension (current)
+
+The approved manual Integration Hub reuses Auth.js, `withOrganisation`, PostgreSQL RLS, the existing audit system, navigation and themes. Additive migrations `202611240001_import_hub` and `202611240002_import_count_consistency` create ImportFile, ImportMapping and ImportError; extends ImportJob lifecycle/provenance/mapping/progress; adds SourceRecord fingerprints and immutable snapshot enforcement; expands the provider allowlist without making API connections.
+
+`src/lib/imports/catalog.ts` defines the nine minimum internal record structures. `validate.ts` maps and validates deterministic decimal strings, dates, timestamps and identifiers. Server-only `import-files.ts` bounds and inspects uploads and encrypts file bytes. `imports.ts` manages per-source locks, immutable deduplication/versioning, references, templates, transactional batches and safe audit/report DTOs. `integration-hub.tsx` presents the workflow using existing styles. See [IMPORTS.md](IMPORTS.md) for the full contract and security controls.
+
+Files are encrypted in PostgreSQL for this bounded local stage; no new object-storage service is connected. A durable database cursor with authenticated 50-row POST batches avoids a detached server task or paid worker. Processing pauses when the browser closes and resumes explicitly. These decisions preserve recoverability while keeping the small-file scope local; unattended workers and object storage require a later operational design.
+
+New `imports.read` and `imports.write` permissions are granted to Owner/Administrator only. New tables use forced RLS; mutation policies also check live import permission. SourceRecord remains immutable, with permission-guarded INSERT now enabled for importing. Existing column-restricted integration configuration remains intact; new directory inserts can only create disconnected, read-only sources. Runtime cannot delete imports/files/errors or overwrite snapshots. Authenticated Original-file downloads are intentionally absent; validation downloads omit original values.
+
+No AI, reconciliation, compliance automation, external API calls or deployment is part of Stage 3. The hosted synthetic demo remains Stage 2. Historical foundation decisions below describe the pre-import state; this section and IMPORTS.md supersede statements that importing is unavailable.
+
+## Historical Stage 1–2 system boundary
 
 CarePilot is a modular Next.js application alongside existing care and finance systems. This stage has no external API clients, upload processing, AI calls, calculation engine or background workers. Synthetic issue fixtures are presentation-only and never stored as imported facts. Disconnected integration-directory rows and empty import-job tables establish future boundaries without implementing integrations.
 
